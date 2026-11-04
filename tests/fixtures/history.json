@@ -1,0 +1,67 @@
+{
+  "result": true,
+  "message": "",
+  "errorMessage": "",
+  "code": "S001",
+  "acceptLanguage": "en_US",
+  "zoneRegionId": "Asia/Hong_Kong",
+  "historyVOList": [
+    {
+      "eventId": "evt-0001",
+      "deviceId": "dev-xxxx",
+      "deviceNm": "Front Door",
+      "msgCd": "622_NONE_AUTO",
+      "msgText": "The door was locked",
+      "subMsgText": "Automatically",
+      "pinTypeCd": "AUTO",
+      "rgstDt": "2026-10-25 03:25:52",
+      "_Rn": "1"
+    },
+    {
+      "eventId": "evt-0002",
+      "deviceId": "dev-xxxx",
+      "deviceNm": "Front Door",
+      "msgCd": "622_OUT",
+      "msgText": "The door was unlocked inside",
+      "subMsgText": "",
+      "pinTypeCd": "INDOOR",
+      "rgstDt": "2026-10-25 03:25:49",
+      "_Rn": "2"
+    },
+    {
+      "eventId": "evt-0003",
+      "deviceId": "dev-xxxx",
+      "deviceNm": "Front Door",
+      "msgCd": "622_IN_FGP",
+      "msgText": "The door was unlocked",
+      "subMsgText": "by Fingerprint (TestFinger)",
+      "pinId": "101",
+      "pinTypeCd": "FGP",
+      "pinNm": "TestFinger",
+      "eventMemberId": "mem-yyyy",
+      "eventMemberNm": "TestMember",
+      "rgstDt": "2026-10-25 03:14:20",
+      "_Rn": "4"
+    },
+    {
+      "eventId": "evt-0004",
+      "deviceId": "dev-xxxx",
+      "deviceNm": "Front Door",
+      "msgCd": "648",
+      "msgText": "The door has been opening for 30sec.",
+      "rgstDt": "2026-10-25 02:53:02",
+      "_Rn": "8"
+    },
+    {
+      "eventId": "evt-0005",
+      "deviceId": "dev-xxxx",
+      "deviceNm": "Front Door",
+      "msgCd": "622_NONE_MNU",
+      "msgText": "The door was locked",
+      "subMsgText": "Manually",
+      "pinTypeCd": "MNU",
+      "rgstDt": "2026-10-14 09:56:06",
+      "_Rn": "364"
+    }
+  ]
+}

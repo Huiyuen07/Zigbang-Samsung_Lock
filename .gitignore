@@ -1,0 +1,14 @@
+# 永不提交真實憑證 / never commit real credentials
+secrets.yaml
+*.env
+creds*.json
+.credentials*
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# 本機跟進清單（含 production 細節，不公開）/ local follow-up list
+IMPROVEMENTS.md

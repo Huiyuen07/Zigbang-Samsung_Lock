@@ -1,0 +1,54 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zigbang／Samsung 門鎖",
+        "description": "用門鎖 App 的帳號登入。整合會自行登入並自動找出你的門鎖。",
+        "data": {
+          "name": "名稱",
+          "login_id": "帳號（登入 ID）",
+          "password": "密碼",
+          "locale": "訊息語言",
+          "base_url": "API 網址"
+        }
+      },
+      "pick_lock": {
+        "title": "選擇門鎖",
+        "description": "此帳號有多於一把門鎖。先選一把加入，其餘的請再新增一次整合。",
+        "data": {
+          "device_id": "門鎖"
+        }
+      },
+      "reauth_confirm": {
+        "title": "重新驗證 {name}",
+        "description": "為這把門鎖重新登入（例如更改密碼後）。",
+        "data": {
+          "login_id": "帳號（登入 ID）",
+          "password": "密碼"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "伺服器拒絕了帳號或密碼。",
+      "cannot_connect": "無法連線到門鎖雲端。",
+      "no_locks": "登入成功，但此帳號沒有任何門鎖。",
+      "wrong_account": "此帳號無權存取這把門鎖。",
+      "unknown": "發生未預期的錯誤，請查看 Home Assistant 日誌。"
+    },
+    "abort": {
+      "already_configured": "此帳號的所有門鎖都已設定。",
+      "reauth_successful": "重新驗證成功。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "門鎖選項",
+        "description": "伺服器會以此語言回傳事件文字。zh_TW 為繁體中文，其他中文為簡體。",
+        "data": {
+          "locale": "訊息語言"
+        }
+      }
+    }
+  }
+}

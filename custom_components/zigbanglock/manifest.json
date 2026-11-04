@@ -1,0 +1,15 @@
+{
+  "domain": "zigbanglock",
+  "name": "Zigbang / Samsung Smart Doorlock",
+  "codeowners": [
+    "@Huiyuen07"
+  ],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/Huiyuen07/Zigbang-Samsung_Lock",
+  "integration_type": "device",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/Huiyuen07/Zigbang-Samsung_Lock/issues",
+  "requirements": [],
+  "version": "0.4.0"
+}

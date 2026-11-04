@@ -1,0 +1,54 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zigbang / Samsung Doorlock",
+        "description": "Sign in with your doorlock app account. The integration logs in itself and finds your lock automatically.",
+        "data": {
+          "name": "Name",
+          "login_id": "Account (login ID)",
+          "password": "Password",
+          "locale": "Message language",
+          "base_url": "API base URL"
+        }
+      },
+      "pick_lock": {
+        "title": "Choose a doorlock",
+        "description": "This account has more than one doorlock. Pick one to add now; add the integration again for the others.",
+        "data": {
+          "device_id": "Doorlock"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate {name}",
+        "description": "Sign in again for this doorlock (for example after a password change).",
+        "data": {
+          "login_id": "Account (login ID)",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "The account or password was rejected by the server.",
+      "cannot_connect": "Could not reach the doorlock cloud.",
+      "no_locks": "Login succeeded but no doorlock was found on this account.",
+      "wrong_account": "This account does not have access to this doorlock.",
+      "unknown": "Unexpected error; see the Home Assistant log."
+    },
+    "abort": {
+      "already_configured": "All doorlocks on this account are already configured.",
+      "reauth_successful": "Re-authentication successful."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Doorlock options",
+        "description": "The server returns event text in this language. Chinese is Traditional for zh_TW, Simplified otherwise.",
+        "data": {
+          "locale": "Message language"
+        }
+      }
+    }
+  }
+}

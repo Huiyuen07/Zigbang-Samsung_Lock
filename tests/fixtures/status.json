@@ -1,0 +1,18 @@
+{
+  "result": true,
+  "message": "",
+  "errorMessage": "",
+  "code": "S001",
+  "acceptLanguage": "en_US",
+  "doorlockStatusVO": {
+    "setAutoReLock": 1,
+    "autoReLockTime": 1,
+    "accessMethod": ["MST", "NUM", "RFC", "FGP", "NFC", "ONE"],
+    "battery": 51,
+    "dummyMode": false,
+    "locked": true,
+    "mode": 0,
+    "wifiEnabled": true,
+    "wifiConnected": true
+  }
+}
