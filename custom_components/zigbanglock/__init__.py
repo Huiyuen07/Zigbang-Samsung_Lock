@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -25,11 +26,14 @@ from .const import (
     CONF_MEMBER_ID,
     CONF_NAME,
     CONF_PASSWORD,
+    CONF_STATUS_INTERVAL,
     DEFAULT_BASE_URL,
     DEFAULT_HISTORY_INTERVAL,
     DEFAULT_LOCALE,
     DEFAULT_NAME,
     DEFAULT_STATUS_INTERVAL,
+    MAX_STATUS_INTERVAL,
+    MIN_STATUS_INTERVAL,
 )
 from .coordinator import ZigbangCoordinator
 
@@ -44,6 +48,16 @@ def _current_locale(entry: ConfigEntry) -> str:
     """語言：options（可隨時改）優先於 data（建立時的值）。"""
     return entry.options.get(
         CONF_LOCALE, entry.data.get(CONF_LOCALE, DEFAULT_LOCALE)
+    )
+
+
+def _status_interval(entry: ConfigEntry) -> timedelta:
+    """狀態輪詢間隔：options 的秒數（夾在允許範圍內），未設定則用預設 8 秒。"""
+    seconds = entry.options.get(CONF_STATUS_INTERVAL)
+    if seconds is None:
+        return DEFAULT_STATUS_INTERVAL
+    return timedelta(
+        seconds=min(max(int(seconds), MIN_STATUS_INTERVAL), MAX_STATUS_INTERVAL)
     )
 
 
@@ -70,7 +84,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZigbangConfigEntry) -> b
         client,
         device_id=data[CONF_DEVICE_ID],
         name=data.get(CONF_NAME, DEFAULT_NAME),
-        status_interval=DEFAULT_STATUS_INTERVAL,
+        status_interval=_status_interval(entry),
         history_interval=DEFAULT_HISTORY_INTERVAL,
     )
 
@@ -85,7 +99,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZigbangConfigEntry) -> b
 async def _async_update_options(
     hass: HomeAssistant, entry: ZigbangConfigEntry
 ) -> None:
-    """語言等選項改動後重新載入整合。"""
+    """語言、輪詢間隔等選項改動後重新載入整合。"""
     await hass.config_entries.async_reload(entry.entry_id)
 
 

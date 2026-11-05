@@ -46,7 +46,11 @@
         "title": "Doorlock options",
         "description": "The server returns event text in this language. Chinese is Traditional for zh_TW, Simplified otherwise.",
         "data": {
-          "locale": "Message language"
+          "locale": "Message language",
+          "status_interval": "Status polling interval (seconds)"
+        },
+        "data_description": {
+          "status_interval": "How often the lock status is read from the cloud (5–300 s, default 8). Higher values put less load on the vendor service, especially with several locks, but door changes show up later."
         }
       }
     }

@@ -1,4 +1,4 @@
-"""Config flow (UI setup via login, lock selection, reauth, language options)."""
+"""Config flow (UI setup via login, lock selection, reauth, language and polling options)."""
 from __future__ import annotations
 
 import logging
@@ -29,11 +29,15 @@ from .const import (
     CONF_MEMBER_ID,
     CONF_NAME,
     CONF_PASSWORD,
+    CONF_STATUS_INTERVAL,
     DEFAULT_BASE_URL,
     DEFAULT_LOCALE,
     DEFAULT_NAME,
+    DEFAULT_STATUS_INTERVAL,
     DOMAIN,
     LOCALES,
+    MAX_STATUS_INTERVAL,
+    MIN_STATUS_INTERVAL,
 )
 from .parsing import ZigbangApiError
 
@@ -228,19 +232,29 @@ class ZigbangConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class ZigbangOptionsFlow(OptionsFlow):
-    """只放可隨時變更、不需重新登入的設定——目前是顯示語言。"""
+    """只放可隨時變更、不需重新登入的設定：顯示語言、狀態輪詢間隔。"""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         if user_input is not None:
             return self.async_create_entry(data=user_input)
-        current = self.config_entry.options.get(
+        options = self.config_entry.options
+        current = options.get(
             CONF_LOCALE, self.config_entry.data.get(CONF_LOCALE, DEFAULT_LOCALE)
+        )
+        interval = options.get(
+            CONF_STATUS_INTERVAL, int(DEFAULT_STATUS_INTERVAL.total_seconds())
         )
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
-                {vol.Optional(CONF_LOCALE, default=current): vol.In(LOCALES)}
+                {
+                    vol.Optional(CONF_LOCALE, default=current): vol.In(LOCALES),
+                    vol.Optional(CONF_STATUS_INTERVAL, default=interval): vol.All(
+                        vol.Coerce(int),
+                        vol.Range(min=MIN_STATUS_INTERVAL, max=MAX_STATUS_INTERVAL),
+                    ),
+                }
             ),
         )

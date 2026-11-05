@@ -1,23 +1,27 @@
-"""Config flow tests (login, lock selection, reauth) with a fake cloud client."""
+"""Config flow tests (login, lock selection, reauth, options) with a fake cloud client."""
 from __future__ import annotations
 
+from datetime import timedelta
 from unittest.mock import patch
 
 import pytest
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.data_entry_flow import FlowResultType, InvalidData
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.zigbanglock import _status_interval
 from custom_components.zigbanglock import async_setup_entry as REAL_SETUP_ENTRY
 from custom_components.zigbanglock.api import ZigbangAuthError
 from custom_components.zigbanglock.const import (
     CONF_DEVICE_ID,
     CONF_DEVICE_UID,
+    CONF_LOCALE,
     CONF_LOGIN_ID,
     CONF_NAME,
     CONF_PASSWORD,
+    CONF_STATUS_INTERVAL,
     DOMAIN,
 )
 
@@ -185,3 +189,37 @@ async def test_setup_without_account_starts_reauth(hass: HomeAssistant) -> None:
     assert entry.state is ConfigEntryState.SETUP_ERROR
     flows = hass.config_entries.flow.async_progress()
     assert [f["context"]["source"] for f in flows] == [config_entries.SOURCE_REAUTH]
+
+
+async def test_options_default_interval_and_save(hass: HomeAssistant) -> None:
+    entry = _entry(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] is FlowResultType.FORM
+    schema = result["data_schema"]({})
+    assert schema[CONF_STATUS_INTERVAL] == 8
+    assert schema[CONF_LOCALE] == "en_US"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_LOCALE: "zh_TW", CONF_STATUS_INTERVAL: 30}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options == {CONF_LOCALE: "zh_TW", CONF_STATUS_INTERVAL: 30}
+
+
+@pytest.mark.parametrize("value", [4, 301])
+async def test_options_interval_out_of_range(hass: HomeAssistant, value) -> None:
+    entry = _entry(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    with pytest.raises(InvalidData):
+        await hass.config_entries.options.async_configure(
+            result["flow_id"], {CONF_LOCALE: "en_US", CONF_STATUS_INTERVAL: value}
+        )
+
+
+@pytest.mark.parametrize(
+    ("options", "seconds"),
+    [({}, 8), ({CONF_STATUS_INTERVAL: 30}, 30), ({CONF_STATUS_INTERVAL: 1}, 5), ({CONF_STATUS_INTERVAL: 9999}, 300)],
+)
+def test_status_interval_from_options(options, seconds) -> None:
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_DEVICE_ID: "dev-aaaa"}, options=options)
+    assert _status_interval(entry) == timedelta(seconds=seconds)

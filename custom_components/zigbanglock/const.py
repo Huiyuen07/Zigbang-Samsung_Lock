@@ -13,6 +13,7 @@ CONF_AUTH_TOKEN = "auth_token"
 CONF_AUTH_CODE = "auth_code"
 CONF_NAME = "name"
 CONF_LOCALE = "locale"
+CONF_STATUS_INTERVAL = "status_interval"  # options：狀態輪詢秒數
 # 自動登入（帳號密碼）相關
 CONF_LOGIN_ID = "login_id"
 CONF_PASSWORD = "password"
@@ -39,6 +40,9 @@ OS_TYPE = "ADR"
 OS_VER = "13"
 # status 很小（~610B），快輪詢以便一偵測到 locked=false 就觸發 history 抓「誰」。
 DEFAULT_STATUS_INTERVAL = timedelta(seconds=8)
+# options 可調範圍（秒）：多鎖帳號可調高以減輕雲端負荷；下限 5 秒。
+MIN_STATUS_INTERVAL = 5
+MAX_STATUS_INTERVAL = 300
 # history 很大（~374KB 全量、無分頁），開門已由 status 觸發，週期性只作 fallback。
 DEFAULT_HISTORY_INTERVAL = timedelta(seconds=1800)
 
