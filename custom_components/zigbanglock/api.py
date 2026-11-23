@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -35,10 +36,12 @@ _LOGGER = logging.getLogger(__name__)
 
 # history 全量 ~374KB，給足時間；status/open/login 通常一秒內返回。
 _TIMEOUT = 25
+# 自動重登失敗後的退避（秒）：伺服器暫時出錯時不每 8 秒狂登入。
+_RELOGIN_BACKOFF = (60, 120, 300, 600)
 
 
 class ZigbangAuthError(ZigbangApiError):
-    """Token/帳密失效。有帳密時會自動重登；否則觸發 reauth。"""
+    """Token/帳密失效（或伺服器回認證類錯誤碼）。有帳密時會自動重登。"""
 
 
 def _sha512(text: str) -> str:
@@ -93,6 +96,9 @@ class ZigbangLockClient:
         self._password = password
         self._device_uid = device_uid
         self._login_lock = asyncio.Lock()
+        self._clock = time.monotonic
+        self._relogin_failures = 0
+        self._next_relogin_at = 0.0
 
     # ---- 身分 / 設定存取 ---------------------------------------------------
 
@@ -182,7 +188,8 @@ class ZigbangLockClient:
         # 成功碼為 S001，E4xx 類視為認證/授權失效。
         code = str(data.get("code", "")).upper()
         if not data.get("result") and code.startswith("E4"):
-            raise ZigbangAuthError(data.get("errorMessage") or code)
+            message = data.get("errorMessage")
+            raise ZigbangAuthError(f"{message} ({code})" if message else code)
         return data
 
     async def _request(
@@ -197,13 +204,28 @@ class ZigbangLockClient:
         try:
             return await self._request_once(method, path, params=params, json=json)
         except ZigbangAuthError:
-            if not self.can_login():
+            if not self.can_login() or self._clock() < self._next_relogin_at:
                 raise
-            await self.async_login()
+            try:
+                await self.async_login()
+            except ZigbangAuthError:
+                self._note_relogin_failure()
+                raise
+            self._note_relogin_success()
             # memberId 登入後可能更新，重建帶 memberId 的 params
             if params is not None and "memberId" in params:
                 params = {**params, "memberId": self._member}
             return await self._request_once(method, path, params=params, json=json)
+
+    def _note_relogin_failure(self) -> None:
+        delay = _RELOGIN_BACKOFF[min(self._relogin_failures, len(_RELOGIN_BACKOFF) - 1)]
+        self._relogin_failures += 1
+        self._next_relogin_at = self._clock() + delay
+        _LOGGER.debug("Re-login failed; next attempt in %ss", delay)
+
+    def _note_relogin_success(self) -> None:
+        self._relogin_failures = 0
+        self._next_relogin_at = 0.0
 
     # ---- 登入 -------------------------------------------------------------
 
@@ -240,9 +262,8 @@ class ZigbangLockClient:
             )
             if not data.get("result"):
                 code = str(data.get("code", "")).upper()
-                raise ZigbangAuthError(
-                    data.get("errorMessage") or data.get("message") or code or "login failed"
-                )
+                message = data.get("errorMessage") or data.get("message") or "login failed"
+                raise ZigbangAuthError(f"{message} ({code})" if code else message)
             self._token = data.get("authToken") or ""
             if data.get("authCode"):
                 self._authcode = str(data["authCode"])

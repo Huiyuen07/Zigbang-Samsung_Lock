@@ -269,3 +269,84 @@ def test_get_doorlocks_parses_list():
         {"device_id": "DEV1", "name": "Front"},
         {"device_id": "DEV2", "name": "Back"},
     ]
+
+
+# ---- 自動重登退避（伺服器暫時出錯時不狂登入）---------------------------
+
+E4_FAIL = {"result": False, "code": "E402", "errorMessage": "RunTimeException failed."}
+
+
+class _Clock:
+    def __init__(self):
+        self.t = 1000.0
+
+    def __call__(self):
+        return self.t
+
+
+def _backoff_client(sess, clock):
+    client = _cred_client(sess)
+    client._clock = clock
+    return client
+
+
+def test_auth_error_message_includes_code():
+    sess = _SeqSession(_FakeResp(payload=E4_FAIL))
+    with pytest.raises(ZigbangAuthError, match=r"RunTimeException failed\. \(E402\)"):
+        _run(_client(sess).async_get_status())
+
+
+def test_failed_relogin_backs_off_before_next_login():
+    clock = _Clock()
+    # 第一輪：status E4 → login 亦 E4 → 拋出
+    sess = _SeqSession(
+        _FakeResp(payload=E4_FAIL),
+        _FakeResp(payload=E4_FAIL),
+        # 第二輪（仍在退避內）：只打 status，不再登入
+        _FakeResp(payload=E4_FAIL),
+        # 第三輪（退避已過）：status E4 → login OK → status OK
+        _FakeResp(payload=E4_FAIL),
+        _FakeResp(payload=LOGIN_OK),
+        _FakeResp(payload=STATUS_OK),
+    )
+    client = _backoff_client(sess, clock)
+    with pytest.raises(ZigbangAuthError):
+        _run(client.async_get_status())
+    assert len(sess.calls) == 2
+
+    clock.t += 30
+    with pytest.raises(ZigbangAuthError):
+        _run(client.async_get_status())
+    assert len(sess.calls) == 3
+    assert not sess.calls[2]["url"].endswith("/user/login")
+
+    clock.t += 60
+    st = _run(client.async_get_status())
+    assert st.locked is True
+    assert sess.calls[4]["url"].endswith("/user/login")
+
+
+def test_relogin_backoff_grows_and_resets_after_success():
+    clock = _Clock()
+    client = _backoff_client(_SeqSession(), clock)
+    delays = []
+    for _ in range(6):
+        client._note_relogin_failure()
+        delays.append(client._next_relogin_at - clock.t)
+    assert delays == [60, 120, 300, 600, 600, 600]
+    client._note_relogin_success()
+    client._note_relogin_failure()
+    assert client._next_relogin_at - clock.t == 60
+
+
+def test_transient_status_error_succeeds_on_retry_without_backoff():
+    # status 偶發 E4，重登成功、重試成功 → 不留退避
+    clock = _Clock()
+    sess = _SeqSession(
+        _FakeResp(payload=E4_FAIL),
+        _FakeResp(payload=LOGIN_OK),
+        _FakeResp(payload=STATUS_OK),
+    )
+    client = _backoff_client(sess, clock)
+    _run(client.async_get_status())
+    assert client._next_relogin_at == 0.0

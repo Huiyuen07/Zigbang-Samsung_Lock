@@ -40,7 +40,7 @@
 
 ### 使用說明
 - **一個帳號多把鎖**：新增時會讓你揀一把；其餘的再新增一次整合即可，已加入的鎖不會再出現。
-- **自動重新登入**：token 失效會自動重登，通常不會察覺。只有改了密碼（或帳號被登出）時，HA 才會提示重新驗證，再輸入一次密碼即可。
+- **自動重新登入**：token 失效會自動重登，通常不會察覺；雲端暫時出錯時會自動重試，期間實體短暫顯示不可用，恢復後自動回復。只有持續約一小時都登入不了（例如改了密碼）時，HA 才會提示重新驗證，再輸入一次密碼即可。
 - **不會擠走手機 App**：整合使用自己的裝置識別碼，手機上的 App 照常登入。
 - **訊息語言**：進出紀錄的文字由雲端按語言回傳，可在整合的「設定選項」隨時切換（`zh_TW` 繁中／`zh_CN` 簡中／`en_US`／`ko_KR`）。中文只分 `zh_TW`＝繁體，其餘＝簡體。
 - **狀態輪詢間隔**：同樣在「設定選項」調整，5–300 秒，預設 8 秒。一個帳號有多把鎖時，建議調高，減輕雲端負荷；代價是開關門較遲反映。
@@ -126,7 +126,7 @@ Each new history entry is:
 
 ### Usage
 - **Several locks on one account:** setup asks you to pick one; add the integration again for the others. Locks already added are not offered again.
-- **Automatic re-login:** an expired token is renewed automatically, so you normally never notice. Only after a password change (or if the account is signed out) does HA ask you to re-authenticate; enter the password once more.
+- **Automatic re-login:** an expired token is renewed automatically, so you normally never notice. Temporary cloud errors are retried automatically; entities show as unavailable briefly and recover on their own. Only if logging in keeps failing for about an hour (for example after a password change) does HA ask you to re-authenticate; enter the password once more.
 - **Does not sign out the phone app:** the integration uses its own device identifier, so the app on your phone stays signed in.
 - **Message language:** history text comes from the cloud in the selected language. Change it any time in the integration's options (`zh_TW` Traditional / `zh_CN` Simplified / `en_US` / `ko_KR`). For Chinese, only `zh_TW` gives Traditional; anything else gives Simplified.
 - **Status polling interval:** also in the integration's options, 5–300 s, default 8 s. With several locks on one account, consider raising it to put less load on the cloud; door changes then show up later.

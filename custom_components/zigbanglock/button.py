@@ -45,7 +45,7 @@ class DoorlockUnlockButton(ZigbangEntity, ButtonEntity):
         try:
             await self.coordinator.client.async_open()
         except ZigbangAuthError as err:
-            # coordinator 下次刷新亦會拋 ConfigEntryAuthFailed 觸發 reauth
+            # 認證持續失效時 coordinator 會在寬限期後觸發 reauth
             raise HomeAssistantError(
                 f"Unlock failed: authentication expired ({err})"
             ) from err

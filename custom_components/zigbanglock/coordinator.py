@@ -29,6 +29,9 @@ _LOGGER = logging.getLogger(__name__)
 _BURST_CYCLES = 2
 # history 拉取失敗後的重試間隔（不跟 status 每次刷新一齊重試 374KB）
 _HISTORY_RETRY = timedelta(seconds=60)
+# 有存帳密時，認證類錯誤持續超過此時長才要求用戶重新驗證；
+# 寬限期內當作暫時錯誤（伺服器偶發回 E4xx「RunTimeException」），由 client 退避重登。
+AUTH_GRACE = timedelta(hours=1)
 
 
 @dataclass
@@ -71,19 +74,23 @@ class ZigbangCoordinator(DataUpdateCoordinator[ZigbangData]):
         self._history_failing = False
         self._last_locked: bool | None = None
         self._ha_device_id: str | None = None
+        self._auth_failing_since: datetime | None = None
 
     def request_history_burst(self) -> None:
         """接下來幾次刷新都拉 history（開鎖鍵或偵測到鎖狀態變化時用）。"""
         self._history_burst = max(self._history_burst, _BURST_CYCLES)
 
     async def _async_update_data(self) -> ZigbangData:
-        # 狀態係關鍵：失敗先至令實體 unavailable；token 失效則觸發 reauth
+        # 狀態係關鍵：失敗先至令實體 unavailable；認證持續失效才觸發 reauth
         try:
             status = await self.client.async_get_status()
         except ZigbangAuthError as err:
-            raise ConfigEntryAuthFailed(str(err)) from err
+            raise self._auth_failure(err) from err
         except ZigbangApiError as err:
             raise UpdateFailed(str(err)) from err
+        if self._auth_failing_since is not None:
+            self._auth_failing_since = None
+            _LOGGER.info("Authentication recovered")
 
         # 邊緣觸發：只在開↔關變化時加拉 history（level 觸發會在門被撐開時狂拉）
         prev, self._last_locked = self._last_locked, status.locked
@@ -102,6 +109,23 @@ class ZigbangCoordinator(DataUpdateCoordinator[ZigbangData]):
                 self._history_burst -= 1
             await self._try_poll_history(data, now)
         return data
+
+    def _auth_failure(self, err: ZigbangAuthError) -> Exception:
+        """認證錯誤 → 寬限期內當暫時錯誤（UpdateFailed），超過才 reauth。"""
+        if not self.client.can_login():
+            return ConfigEntryAuthFailed(str(err))
+        now = dt_util.utcnow()
+        if self._auth_failing_since is None:
+            self._auth_failing_since = now
+            _LOGGER.warning(
+                "Authentication error from cloud, will keep re-logging in "
+                "automatically for up to %s before asking to re-authenticate: %s",
+                AUTH_GRACE,
+                err,
+            )
+        if now - self._auth_failing_since >= AUTH_GRACE:
+            return ConfigEntryAuthFailed(str(err))
+        return UpdateFailed(f"authentication error, retrying: {err}")
 
     async def _try_poll_history(self, data: ZigbangData, now: datetime) -> None:
         """history 係 best-effort：失敗唔可以連坐 status 令全部實體 unavailable。"""
